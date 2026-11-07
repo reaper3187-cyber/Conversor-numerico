@@ -74,7 +74,7 @@
   input.addEventListener('keydown',e=>{if(e.key==='Enter')convert()});
   base.addEventListener('change',()=>{if(input.value.trim())convert()});
   document.getElementById('clear').addEventListener('click',()=>{input.value='';current=null;message.textContent='';for(const id of Object.values(ids))document.getElementById(id).textContent='—';input.focus()});
-  document.getElementById('swap').addEventListener('click',()=>{if(current===null){message.textContent='Primero convierte un número.';return}const next=base.value;input.value=current.toString(Number(next)).toUpperCase();base.value=String(({10:2,2:8,8:16,16:10})[next]);convert()});
+  document.getElementById('swap').addEventListener('click',()=>{if(current===null){message.textContent='Primero convierte un número.';return}const next=String(({10:2,2:8,8:16,16:10})[base.value]);input.value=current.toString(Number(next)).toUpperCase();base.value=next;convert()});
   document.querySelectorAll('[data-copy]').forEach(btn=>btn.addEventListener('click',async()=>{const value=document.getElementById(ids[({decimal:10,binary:2,octal:8,hex:16})[btn.dataset.copy]]).textContent;if(value==='—')return;try{await navigator.clipboard.writeText(value);message.textContent='Resultado copiado.'}catch{message.textContent='No se pudo copiar automáticamente; selecciona el resultado.'}}));
   if('serviceWorker' in navigator && location.protocol.startsWith('http')) window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));
 })();
