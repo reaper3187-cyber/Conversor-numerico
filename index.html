@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#101827">
+  <meta name="description" content="Convierte números entre decimal, binario, octal y hexadecimal.">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <title>Conversor numérico</title>
+  <style>
+    :root{color-scheme:dark;--bg:#0b1220;--panel:#121d30;--line:#293850;--muted:#a9b7cc;--accent:#68d5bd;--text:#f4f7fb}
+    *{box-sizing:border-box}body{margin:0;min-height:100vh;background:radial-gradient(ellipse at top,#1a2d49 0,#0b1220 55%);color:var(--text);font:16px system-ui,-apple-system,Segoe UI,sans-serif;padding:24px 16px}
+    main{max-width:760px;margin:auto}.top{text-align:center;margin:12px 0 26px}.mark{font-size:38px}.top h1{font-size:clamp(28px,6vw,40px);margin:8px 0}.top p{color:var(--muted);margin:0}
+    .panel{background:rgba(18,29,48,.94);border:1px solid var(--line);border-radius:22px;padding:20px;box-shadow:0 18px 50px #0005}
+    label{display:block;font-weight:650;margin:0 0 8px}.entry{display:grid;grid-template-columns:1fr;gap:14px}
+    input,select{width:100%;background:#0b1424;color:var(--text);border:1px solid #3a4c66;border-radius:12px;padding:15px;font:inherit;min-height:52px}
+    input:focus,select:focus,button:focus-visible{outline:3px solid #68d5bd88;outline-offset:2px}
+    .buttons{display:flex;flex-wrap:wrap;gap:10px;margin:16px 0 4px}button{border:0;border-radius:12px;padding:12px 16px;font:650 15px system-ui;cursor:pointer;background:var(--accent);color:#09201c}
+    button.secondary{background:#26364e;color:var(--text)}button:active{transform:translateY(1px)}
+    #message{min-height:24px;color:#ffbdad;margin:12px 2px 0}.results{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:20px}
+    .result{background:#0c1627;border:1px solid var(--line);border-radius:14px;padding:14px;min-width:0}.result-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px}.result strong{font-size:14px;color:var(--muted)}.value{font:600 16px ui-monospace,SFMono-Regular,Consolas,monospace;overflow-wrap:anywhere;min-height:24px}.copy{padding:7px 10px;font-size:12px;background:#26364e;color:var(--text)}
+    .hint{color:var(--muted);font-size:13px;line-height:1.5;margin:18px 2px 0}
+    @media(max-width:520px){body{padding:16px 12px}.panel{padding:16px}.results{grid-template-columns:1fr}.buttons button{flex:1}}
+  </style>
+</head>
+<body>
+<main>
+  <header class="top"><div class="mark" aria-hidden="true">🔢</div><h1>Conversor numérico</h1><p>Decimal · Binario · Octal · Hexadecimal</p></header>
+  <section class="panel" aria-label="Conversor de bases numéricas">
+    <div class="entry">
+      <div><label for="number">Número que quieres convertir</label><input id="number" type="text" inputmode="text" autocomplete="off" spellcheck="false" placeholder="Ejemplo: 255" aria-describedby="help"></div>
+      <div><label for="base">La base del número que has escrito</label><select id="base"><option value="10">Decimal (base 10)</option><option value="2">Binario (base 2)</option><option value="8">Octal (base 8)</option><option value="16">Hexadecimal (base 16)</option></select></div>
+    </div>
+    <div class="buttons"><button id="convert">Convertir</button><button class="secondary" id="swap" type="button">Intercambiar base</button><button class="secondary" id="clear" type="button">Borrar</button></div>
+    <p id="message" role="status" aria-live="polite"></p>
+    <div class="results" aria-label="Resultados">
+      <article class="result"><div class="result-head"><strong>DECIMAL · BASE 10</strong><button class="copy" data-copy="decimal">Copiar</button></div><div class="value" id="decimal">—</div></article>
+      <article class="result"><div class="result-head"><strong>BINARIO · BASE 2</strong><button class="copy" data-copy="binary">Copiar</button></div><div class="value" id="binary">—</div></article>
+      <article class="result"><div class="result-head"><strong>OCTAL · BASE 8</strong><button class="copy" data-copy="octal">Copiar</button></div><div class="value" id="octal">—</div></article>
+      <article class="result"><div class="result-head"><strong>HEXADECIMAL · BASE 16</strong><button class="copy" data-copy="hex">Copiar</button></div><div class="value" id="hex">—</div></article>
+    </div>
+    <p class="hint" id="help">Puedes usar números enteros positivos o negativos. En hexadecimal se aceptan letras A–F. También puedes separar grupos con guiones bajos, por ejemplo: 1_000.</p>
+  </section>
+</main>
+<script>
+(() => {
+  const input=document.getElementById('number'), base=document.getElementById('base'), message=document.getElementById('message');
+  const ids={10:'decimal',2:'binary',8:'octal',16:'hex'};
+  let current=null;
+  function parse(value,radix){
+    let s=value.trim().replaceAll('_','');
+    if(!s) throw Error('Escribe un número para convertir.');
+    let sign=1n;
+    if(s[0]==='-'||s[0]==='+'){if(s[0]==='-')sign=-1n;s=s.slice(1)}
+    if(!s) throw Error('Escribe los dígitos después del signo.');
+    const chars='0123456789ABCDEF';
+    let n=0n;
+    for(const ch of s.toUpperCase()){
+      const d=chars.indexOf(ch);
+      if(d<0||d>=radix) throw Error('El número no es válido para la base '+radix+'.');
+      n=n*BigInt(radix)+BigInt(d);
+    }
+    return n*sign;
+  }
+  function convert(){
+    try{
+      const radix=Number(base.value), n=parse(input.value,radix);
+      current=n; message.textContent='';
+      for(const [r,id] of Object.entries(ids)) document.getElementById(id).textContent=n.toString(Number(r)).toUpperCase();
+    }catch(e){current=null;message.textContent=e.message;for(const id of Object.values(ids))document.getElementById(id).textContent='—'}
+  }
+  document.getElementById('convert').addEventListener('click',convert);
+  input.addEventListener('keydown',e=>{if(e.key==='Enter')convert()});
+  base.addEventListener('change',()=>{if(input.value.trim())convert()});
+  document.getElementById('clear').addEventListener('click',()=>{input.value='';current=null;message.textContent='';for(const id of Object.values(ids))document.getElementById(id).textContent='—';input.focus()});
+  document.getElementById('swap').addEventListener('click',()=>{if(current===null){message.textContent='Primero convierte un número.';return}const next=base.value;input.value=current.toString(Number(next)).toUpperCase();base.value=String(({10:2,2:8,8:16,16:10})[next]);convert()});
+  document.querySelectorAll('[data-copy]').forEach(btn=>btn.addEventListener('click',async()=>{const value=document.getElementById(ids[({decimal:10,binary:2,octal:8,hex:16})[btn.dataset.copy]]).textContent;if(value==='—')return;try{await navigator.clipboard.writeText(value);message.textContent='Resultado copiado.'}catch{message.textContent='No se pudo copiar automáticamente; selecciona el resultado.'}}));
+  if('serviceWorker' in navigator && location.protocol.startsWith('http')) window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));
+})();
+</script>
+</body></html>
